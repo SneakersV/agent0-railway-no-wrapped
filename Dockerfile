@@ -1,6 +1,11 @@
 FROM agent0ai/agent-zero:v0.9.7
 WORKDIR /a0
 
+# Modify requirements.txt to prevent runtime re-installation of vision packages
+RUN [ -f requirements.txt ] && sed -i '/timm/d' requirements.txt && \
+  sed -i '/torchvision/d' requirements.txt && \
+  sed -i '/onnx/d' requirements.txt || true
+
 ENV PYTHONNOUSERSITE=1
 ENV PYTHONPATH=
 
