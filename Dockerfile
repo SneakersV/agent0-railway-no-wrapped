@@ -7,12 +7,14 @@ ENV PYTHONPATH=
 
 RUN /opt/venv-a0/bin/pip install --no-cache-dir -U "pip<25" "setuptools" "wheel"
 
+# --- REMOVE vision/onnx stack to avoid transformers timm_wrapper crash ---
+RUN /opt/venv-a0/bin/pip uninstall -y timm onnx onnxruntime ml_dtypes || true
+
 # Install torch/torchvision CPU WITHOUT deps (so it won't upgrade numpy to 2.x) ----
 RUN /opt/venv-a0/bin/pip install --no-cache-dir --force-reinstall -U \
   --index-url https://download.pytorch.org/whl/cpu \
   --no-deps \
-  "torch==2.3.1" \
-  "torchvision==0.18.1"
+  "torch==2.3.1"
 
 # cài lại đồng bộ + ép cài lại wheel
 RUN /opt/venv-a0/bin/pip install --no-cache-dir --force-reinstall -U \
@@ -25,14 +27,13 @@ RUN /opt/venv-a0/bin/pip install --no-cache-dir -U \
   "sentence-transformers<3.0" \
   "accelerate<1.0"
 
-# Install the missing pieces explicitly, pinned to avoid numpy dtype recursion
-RUN /opt/venv-a0/bin/pip install --no-cache-dir --force-reinstall -U \
-  "timm==1.0.9" \
-  "onnx==1.16.1" \
-  "ml_dtypes==0.4.0"
+# # Install the missing pieces explicitly, pinned to avoid numpy dtype recursion
+# RUN /opt/venv-a0/bin/pip install --no-cache-dir --force-reinstall -U \
+#   "timm==1.0.9" \
+#   "onnx==1.16.1" \
+#   "ml_dtypes==0.4.0"
 
 # ---- Fail-fast tests during build ----
-RUN /opt/venv-a0/bin/python -c "import numpy, torch, torchvision, timm, onnx, ml_dtypes; print('ok', numpy.__version__, torch.__version__, torchvision.__version__, timm.__version__, onnx.__version__, ml_dtypes.__version__)"
 RUN /opt/venv-a0/bin/python -c "import numpy; import numpy.core.multiarray as ma; print('numpy ok', numpy.__version__, numpy.__file__)"
 RUN /opt/venv-a0/bin/python -c "import scipy, sklearn; print('scipy ok', scipy.__version__, 'sklearn ok', sklearn.__version__)"
 RUN /opt/venv-a0/bin/python -c "import torch, torchvision; print('torch ok', torch.__version__, 'torchvision ok', torchvision.__version__)"
