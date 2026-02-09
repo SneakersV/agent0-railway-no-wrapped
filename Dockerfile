@@ -23,12 +23,14 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir --only-binary=:all: \
   "scikit-learn==1.5.2"
 
 # 4) NLP stack pinned (stable combo with py3.12 CPU)
+# Downgrade transformers to avoid 'register_fake' issues with slightly older torch,
+# or ensure torch is new enough. Let's align them.
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir --only-binary=:all: \
-  "transformers==4.49.0" \
-  "accelerate==0.34.2" \
+  "transformers==4.40.2" \
+  "accelerate==0.30.1" \
   "sentence-transformers==2.7.0"
 
-# 5) Optional: torch CPU (don’t use --no-deps; let it install compatible deps)
+# 5) Torch CPU 2.4.0 (recent enough for modern transformers)
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   --index-url https://download.pytorch.org/whl/cpu \
-  "torch==2.3.1"
+  "torch==2.4.0"
