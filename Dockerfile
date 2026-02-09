@@ -25,6 +25,9 @@ RUN /opt/venv-a0/bin/pip install --no-cache-dir -U \
   "sentence-transformers<3.0" \
   "accelerate<1.0"
 
+# Prevent transformers timm wrapper import loop (common cause of recursion error)
+RUN /opt/venv-a0/bin/pip uninstall -y timm || true
+
 # ---- Fail-fast tests during build ----
 RUN /opt/venv-a0/bin/python -c "import numpy; import numpy.core.multiarray as ma; print('numpy ok', numpy.__version__, numpy.__file__)"
 RUN /opt/venv-a0/bin/python -c "import scipy, sklearn; print('scipy ok', scipy.__version__, 'sklearn ok', sklearn.__version__)"
