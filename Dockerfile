@@ -5,7 +5,7 @@ WORKDIR /a0
 
 RUN /opt/venv-a0/bin/pip install --no-cache-dir -U \
   "pip<25" "setuptools" "wheel" \
-  "numpy<2" \
+  "numpy>=1.26,<2" \
   "scipy>=1.11,<1.13" \
   "scikit-learn>=1.4,<1.6" \
   "transformers<4.50" \
