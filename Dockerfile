@@ -5,7 +5,7 @@ WORKDIR /a0
 RUN /opt/venv-a0/bin/pip install --no-cache-dir -U "pip<25" "setuptools" "wheel"
 
 # cài lại đồng bộ + ép cài lại wheel
-RUN /opt/venv-a0/bin/pip install --no-cache-dir -U \
+RUN /opt/venv-a0/bin/pip install --no-cache-dir --force-reinstall -U \
   "numpy>=1.26,<2" \
   "scipy>=1.11,<1.13" \
   "scikit-learn>=1.4,<1.6" \
@@ -13,8 +13,8 @@ RUN /opt/venv-a0/bin/pip install --no-cache-dir -U \
   "sentence-transformers<3.0" \
   "accelerate<1.0"
 
-# Chỉ ép lại các gói gây lỗi (nhanh hơn nhiều)
-RUN /opt/venv-a0/bin/pip install --no-cache-dir --force-reinstall \
+# torch/torchvision (PyTorch CPU wheels)
+RUN /opt/venv-a0/bin/pip install --no-cache-dir --force-reinstall -U \
   --index-url https://download.pytorch.org/whl/cpu \
   "torch==2.3.1" "torchvision==0.18.1"
 
