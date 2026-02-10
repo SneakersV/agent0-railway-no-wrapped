@@ -55,7 +55,13 @@ ENV A0_USER_DIR=/a0/usr \
   SENTENCE_TRANSFORMERS_HOME=/a0/usr/.cache/sentence-transformers
 
 # --- Persistence Setup ---
-# Copy the custom initialization script
+# 1. Config environment for persistent Python packages (Hybrid Persistence)
+#    New pip installs go to /per/lib, but we keep system libs in /opt/venv-a0
+ENV PIP_TARGET=/per/lib \
+  PYTHONPATH=/per/lib:/a0 \
+  PATH=/per/lib/bin:$PATH
+
+# 2. Copy the custom initialization script
 COPY initialize_with_persistence.sh /initialize_with_persistence.sh
 RUN chmod +x /initialize_with_persistence.sh
 
