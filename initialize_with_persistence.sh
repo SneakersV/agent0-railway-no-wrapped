@@ -24,6 +24,15 @@ if [ ! -d "$PER_VOL" ]; then
     echo "Please mount a volume to $PER_VOL in Railway settings."
 else
     echo "Volume detected at $PER_VOL"
+
+    # 0. PRE-POPULATE /a0
+    # We must populate /a0 from /git/agent-zero NOW, before creating symlinks.
+    # Otherwise, the default copy_A0.sh script will run later, try to copy directories
+    # over our symlinks, and fail with "cannot overwrite non-directory".
+    if [ ! -f "/a0/run_ui.py" ]; then
+        echo "Pre-populating /a0 from /git/agent-zero..."
+        cp -rn --no-preserve=ownership,mode /git/agent-zero/. /a0/
+    fi
     
     # 1. Handle Symlinked Directories
     for CONTAINER_PATH in "${!PERSIST_PATHS[@]}"; do
@@ -32,31 +41,34 @@ else
         
         echo "Processing $CONTAINER_PATH -> $PER_PATH"
         
-        # If persistent path doesn't exist, copy initial data from container
+        # Check if we have data in the container (now we do, because of pre-populate)
+        # If persistent storage is empty, move container data there.
+        # If persistent storage has data, delete container data and link.
+        
         if [ ! -d "$PER_PATH" ]; then
-            echo "  -> First run detected for $PER_SUBDIR. Initializing from image..."
+            echo "  -> First run detected for $PER_SUBDIR. Moving initial data to volume..."
             mkdir -p "$(dirname "$PER_PATH")"
             if [ -d "$CONTAINER_PATH" ]; then
-                cp -r --no-preserve=ownership "$CONTAINER_PATH" "$PER_PATH"
+                mv "$CONTAINER_PATH" "$PER_PATH"
             else
                 mkdir -p "$PER_PATH"
             fi
+        else
+            echo "  -> Found existing data in volume for $PER_SUBDIR. Using it."
+            # Remove the container version (it's either from image or pre-populate)
+            rm -rf "$CONTAINER_PATH"
         fi
 
-        # Swap container directory with symlink
-        rm -rf "$CONTAINER_PATH"
+        # Create the symlink
         ln -s "$PER_PATH" "$CONTAINER_PATH"
         echo "  -> Linked $CONTAINER_PATH -> $PER_PATH"
     done
 
     # 2. Handle Python Libraries (PIP_TARGET Strategy)
-    # We create a directory for user-installed packages, but we DO NOT move the system venv
+    # We create a directory for user-installed packages
     PER_LIB="$PER_VOL/lib"
     mkdir -p "$PER_LIB"
     echo "  -> Prepared persistent library directory at $PER_LIB"
-    
-    # We rely on ENV variables (PIP_TARGET, PYTHONPATH) set in Dockerfile 
-    # to make use of this directory.
 fi
 
 echo "Persistence setup complete."
