@@ -40,25 +40,17 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "torch==2.4.0" \
   "numpy<2"
 
+RUN /opt/venv-a0/bin/python -m pip uninstall -y faiss-cpu || true
+
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "timm==1.0.9" \
   "numpy<2"
 
-# ------------------------------------------------------------
-# FIX: Enable FAISS <-> torch Tensor compatibility globally
-# (prevents: ValueError: input not a numpy array)
-# ------------------------------------------------------------
-RUN /opt/venv-a0/bin/python - <<'PY'
-import site, os
-sp = site.getsitepackages()[0]
-path = os.path.join(sp, "sitecustomize.py")
-with open(path, "w", encoding="utf-8") as f:
-    f.write(
-        "try:\n"
-        "    import faiss\n"
-        "    import faiss.contrib.torch_utils\n"
-        "except Exception:\n"
-        "    pass\n"
-    )
-print("Wrote", path)
-PY
+ENV A0_USER_DIR=/a0/usr \
+  XDG_CONFIG_HOME=/a0/usr/.config \
+  XDG_CACHE_HOME=/a0/usr/.cache \
+  HF_HOME=/a0/usr/.cache/huggingface \
+  TRANSFORMERS_CACHE=/a0/usr/.cache/huggingface/transformers \
+  HUGGINGFACE_HUB_CACHE=/a0/usr/.cache/huggingface/hub \
+  TORCH_HOME=/a0/usr/.cache/torch \
+  SENTENCE_TRANSFORMERS_HOME=/a0/usr/.cache/sentence-transformers
