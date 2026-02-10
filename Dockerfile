@@ -1,5 +1,5 @@
 FROM agent0ai/agent-zero:v0.9.7
-ARG CACHE_BUST=0
+ARG CACHE_BUST=1
 RUN echo "CACHE_BUST=$CACHE_BUST"
 
 WORKDIR /a0
@@ -13,7 +13,7 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir -U "pip<25" "setuptool
 # 1) Remove problematic preinstalled compiled stack first (avoid mixing ABIs)
 RUN /opt/venv-a0/bin/python -m pip uninstall -y \
   numpy scipy scikit-learn transformers accelerate sentence-transformers \
-  torchvision timm onnx onnxruntime ml_dtypes \
+  torchvision timm onnx onnxruntime ml_dtypes faiss-cpu \
   || true
 
 # 2) Install NUMPY FIRST (pin hard)
@@ -40,10 +40,9 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "torch==2.4.0" \
   "numpy<2"
 
-RUN /opt/venv-a0/bin/python -m pip uninstall -y faiss-cpu || true
-
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "timm==1.0.9" \
+  "faiss-cpu==1.8.0" \
   "numpy<2"
 
 ENV A0_USER_DIR=/a0/usr \
