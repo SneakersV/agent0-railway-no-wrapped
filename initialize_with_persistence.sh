@@ -62,4 +62,10 @@ fi
 echo "Persistence setup complete."
 
 echo "Starting standard Agent Zero initialization..."
+
+# PATCH: The original initialize.sh tries to copy /per/* to /, which conflicts 
+# with our symlink strategy (and overwrites /lib). We must disable it.
+# The line is: cp -r --no-preserve=ownership,mode /per/* /
+sed -i 's|cp -r --no-preserve=ownership,mode /per/\* /|echo "Skipping copy from /per (managed by persistence script)"|' /exe/initialize.sh
+
 exec /exe/initialize.sh "$@"
