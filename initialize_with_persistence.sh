@@ -60,10 +60,11 @@ else
             # This fixes "FileNotFound" if the volume has broken/old prompts
             if [[ "$PER_SUBDIR" == "prompts" && -d "$CONTAINER_PATH" ]]; then
                 echo "    -> Force updating prompts from image..."
-                cp -rf "$CONTAINER_PATH"/* "$PER_PATH"/
+                cp -rf "$CONTAINER_PATH"/. "$PER_PATH"/
             elif [ -d "$CONTAINER_PATH" ]; then
                 # For other dirs, just fill missing files (don't overwrite user data)
-                cp -rn "$CONTAINER_PATH"/* "$PER_PATH"/ || true
+                # Use /. to copy contents including hidden files, avoids error if empty
+                cp -rn "$CONTAINER_PATH"/. "$PER_PATH"/ || true
             fi
             
             # Remove the container version
