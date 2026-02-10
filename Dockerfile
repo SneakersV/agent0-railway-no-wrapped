@@ -45,15 +45,6 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "faiss-cpu==1.8.0" \
   "numpy<2"
 
-ENV A0_USER_DIR=/a0/usr \
-  XDG_CONFIG_HOME=/a0/usr/.config \
-  XDG_CACHE_HOME=/a0/usr/.cache \
-  HF_HOME=/a0/usr/.cache/huggingface \
-  TRANSFORMERS_CACHE=/a0/usr/.cache/huggingface/transformers \
-  HUGGINGFACE_HUB_CACHE=/a0/usr/.cache/huggingface/hub \
-  TORCH_HOME=/a0/usr/.cache/torch \
-  SENTENCE_TRANSFORMERS_HOME=/a0/usr/.cache/sentence-transformers
-
 # --- Persistence Setup ---
 # 1. Config environment for persistent Python packages (Hybrid Persistence)
 #    New pip installs go to /per/lib, but we keep system libs in /opt/venv-a0
