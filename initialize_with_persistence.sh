@@ -54,8 +54,19 @@ else
                 mkdir -p "$PER_PATH"
             fi
         else
-            echo "  -> Found existing data in volume for $PER_SUBDIR. Using it."
-            # Remove the container version (it's either from image or pre-populate)
+            echo "  -> Found existing data in volume for $PER_SUBDIR. Syncing..."
+            
+            # Special handling for prompts: ALWAYS update them from image
+            # This fixes "FileNotFound" if the volume has broken/old prompts
+            if [[ "$PER_SUBDIR" == "prompts" && -d "$CONTAINER_PATH" ]]; then
+                echo "    -> Force updating prompts from image..."
+                cp -rf "$CONTAINER_PATH"/* "$PER_PATH"/
+            elif [ -d "$CONTAINER_PATH" ]; then
+                # For other dirs, just fill missing files (don't overwrite user data)
+                cp -rn "$CONTAINER_PATH"/* "$PER_PATH"/ || true
+            fi
+            
+            # Remove the container version
             rm -rf "$CONTAINER_PATH"
         fi
 
