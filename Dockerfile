@@ -43,3 +43,22 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "timm==1.0.9" \
   "numpy<2"
+
+# ------------------------------------------------------------
+# FIX: Enable FAISS <-> torch Tensor compatibility globally
+# (prevents: ValueError: input not a numpy array)
+# ------------------------------------------------------------
+RUN /opt/venv-a0/bin/python - <<'PY'
+import site, os
+sp = site.getsitepackages()[0]
+path = os.path.join(sp, "sitecustomize.py")
+with open(path, "w", encoding="utf-8") as f:
+    f.write(
+        "try:\n"
+        "    import faiss\n"
+        "    import faiss.contrib.torch_utils\n"
+        "except Exception:\n"
+        "    pass\n"
+    )
+print("Wrote", path)
+PY
