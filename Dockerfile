@@ -1,4 +1,7 @@
 FROM agent0ai/agent-zero:v0.9.7
+ARG CACHE_BUST=0
+RUN echo "CACHE_BUST=$CACHE_BUST"
+
 WORKDIR /a0
 
 ENV PYTHONNOUSERSITE=1
@@ -31,6 +34,12 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir --only-binary=:all: \
   "sentence-transformers==2.7.0"
 
 # 5) Torch CPU 2.4.0 (recent enough for modern transformers)
+# FORCE numpy<2 again here to prevent torch dependencies from upgrading it
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   --index-url https://download.pytorch.org/whl/cpu \
-  "torch==2.4.0"
+  "torch==2.4.0" \
+  "numpy<2"
+
+RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
+  "timm==1.0.9" \
+  "numpy<2"
