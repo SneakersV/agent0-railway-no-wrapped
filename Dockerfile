@@ -53,3 +53,11 @@ ENV A0_USER_DIR=/a0/usr \
   HUGGINGFACE_HUB_CACHE=/a0/usr/.cache/huggingface/hub \
   TORCH_HOME=/a0/usr/.cache/torch \
   SENTENCE_TRANSFORMERS_HOME=/a0/usr/.cache/sentence-transformers
+
+# --- Persistence Setup ---
+# Copy the custom initialization script
+COPY initialize_with_persistence.sh /initialize_with_persistence.sh
+RUN chmod +x /initialize_with_persistence.sh
+
+# Set the new entrypoint/command
+CMD ["/initialize_with_persistence.sh", "main"]
