@@ -5,8 +5,5 @@ __pycache__/
 .idea/
 .vscode/
 .n8n
-
-# Secrets
 credentials.json
 client_secret.json
-.env
