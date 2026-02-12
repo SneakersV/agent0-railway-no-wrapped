@@ -48,20 +48,28 @@ def build_knowledge_base():
         }
         knowledge_entries.append(entry)
 
-    # Save to a Markdown file for Agent Zero's memory
-    output_path = "memory_rules.md"
+    # Save to a Markdown file in the persistent memory directory
+    output_path = "/per/memory/knowledge_base.md"
+    
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("# Điện Máy Thăng Long - Knowledge Base\n\n")
-        f.write("Generated from Supabase + Google Drive\n\n")
+        f.write("> **System Note**: This is the structured index of all company files. Use this to locate documents and understand their contents before answering questions.\n\n")
+        f.write("| File Name | Drive Link | Summary/Content Preview |\n")
+        f.write("| :--- | :--- | :--- |\n")
         
         for entry in knowledge_entries:
-            f.write(f"## File: {entry['file_name']}\n")
-            f.write(f"- **Drive ID:** {entry['drive_id']}\n")
-            f.write(f"- **Summary:**\n")
-            f.write(f"{entry['content_summary']}\n")
-            f.write("\n---\n\n")
+            # Create a direct link (if View Link is available, else construct it)
+            drive_link = f"https://docs.google.com/spreadsheets/d/{entry['drive_id']}" if "spreadsheet" in entry.get('mime_type', '') else f"https://drive.google.com/file/d/{entry['drive_id']}/view"
+            
+            # Clean summary for Markdown table
+            summary = entry['content_summary'].replace("\n", "<br>").replace("|", "-")
+            
+            f.write(f"| **{entry['file_name']}** | [Open File]({drive_link}) | {summary} |\n")
 
-    return f"Successfully generated {output_path} with {len(knowledge_entries)} entries."
+    return f"Successfully generated {output_path} with {len(knowledge_entries)} entries. Agent Zero will now have access to this knowledge."
 
 if __name__ == "__main__":
     result = build_knowledge_base()

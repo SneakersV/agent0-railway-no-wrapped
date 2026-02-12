@@ -92,4 +92,24 @@ echo "Starting standard Agent Zero initialization..."
 # The line is: cp -r --no-preserve=ownership,mode /per/* /
 sed -i 's|cp -r --no-preserve=ownership,mode /per/\* /|echo "Skipping copy from /per (managed by persistence script)"|' /exe/initialize.sh
 
+# --- Self-Healing: Fix Persistence Conflicts (Pre-Boot) ---
+# We must do this HERE, before transferring control to supervisor, to avoid race conditions.
+echo "Self-Healing: Cleaning up potential conflict libraries in /per/lib..."
+export PIP_TARGET=/per/lib
+export PYTHONPATH=/per/lib:/a0
+
+# 1. Force Uninstall to remove old/incompatible versions from volume
+# We allow failure (|| true) in case they don't exist
+/opt/venv-a0/bin/python -m pip uninstall -y fastmcp pydantic google-api-python-client google-auth-httplib2 google-auth-oauthlib || true
+
+# 2. Re-install fresh compatible versions
+echo "Self-Healing: Installing fresh compatible libraries..."
+/opt/venv-a0/bin/python -m pip install --no-cache-dir \
+    "fastmcp" \
+    "pydantic" \
+    "google-api-python-client" \
+    "google-auth-httplib2" \
+    "google-auth-oauthlib" || echo "WARNING: Self-healing install failed!"
+# -----------------------------------------------
+
 exec /exe/initialize.sh "$@"
