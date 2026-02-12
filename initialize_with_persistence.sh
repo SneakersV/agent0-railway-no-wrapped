@@ -103,10 +103,11 @@ export PYTHONPATH=/per/lib:/a0
 /opt/venv-a0/bin/python -m pip uninstall -y fastmcp pydantic google-api-python-client google-auth-httplib2 google-auth-oauthlib || true
 
 # 2. Re-install fresh compatible versions
-echo "Self-Healing: Installing fresh compatible libraries..."
+# Downgrading to ensure compatibility with Agent Zero v0.9.7 code
+echo "Self-Healing: Installing FIXED compatible libraries..."
 /opt/venv-a0/bin/python -m pip install --no-cache-dir \
-    "fastmcp" \
-    "pydantic" \
+    "fastmcp==1.4.1" \
+    "pydantic==2.9.2" \
     "google-api-python-client" \
     "google-auth-httplib2" \
     "google-auth-oauthlib" || echo "WARNING: Self-healing install failed!"
