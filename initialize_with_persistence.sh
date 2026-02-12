@@ -104,9 +104,10 @@ export PYTHONPATH=/per/lib:/a0
 
 # 2. Re-install fresh compatible versions
 # Downgrading to ensure compatibility with Agent Zero v0.9.7 code
+# fastmcp==0.4.1 is the last 0.x version before the 2.0 rewrite (compatible with older agent0)
 echo "Self-Healing: Installing FIXED compatible libraries..."
 /opt/venv-a0/bin/python -m pip install --no-cache-dir \
-    "fastmcp==1.4.1" \
+    "fastmcp==0.4.1" \
     "pydantic==2.9.2" \
     "google-api-python-client" \
     "google-auth-httplib2" \
