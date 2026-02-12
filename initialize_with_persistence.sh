@@ -104,14 +104,22 @@ export PYTHONPATH=/per/lib:/a0
 
 # 2. Re-install fresh compatible versions
 # Downgrading to ensure compatibility with Agent Zero v0.9.7 code
-# fastmcp==0.4.1 is the last 0.x version before the 2.0 rewrite (compatible with older agent0)
+# 2. Re-install fresh compatible versions
+# fastmcp < 2.0 avoids the major rewrite and deprecation warnings
+# pydantic < 2.10 avoids the "default_factory" TypeError
 echo "Self-Healing: Installing FIXED compatible libraries..."
 /opt/venv-a0/bin/python -m pip install --no-cache-dir \
-    "fastmcp==0.4.1" \
-    "pydantic==2.9.2" \
+    "fastmcp<2.0" \
+    "pydantic<2.10" \
     "google-api-python-client" \
     "google-auth-httplib2" \
-    "google-auth-oauthlib" || echo "WARNING: Self-healing install failed!"
+    "google-auth-oauthlib" > /a0/install_log.txt 2>&1 || echo "WARNING: Self-healing install failed!"
+
+# Show log for debugging
+echo "--- INSTALL SHARED LOG ---"
+cat /a0/install_log.txt
+echo "--------------------------"
+
 # -----------------------------------------------
 
 exec /exe/initialize.sh "$@"
