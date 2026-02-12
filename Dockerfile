@@ -57,4 +57,26 @@ COPY initialize_with_persistence.sh /initialize_with_persistence.sh
 RUN chmod +x /initialize_with_persistence.sh
 
 # Set the new entrypoint/command
-CMD ["/initialize_with_persistence.sh", "main"]
+# --- File Receiver API Setup ---
+# Install dependencies for the upload API AND Google Drive Tools
+RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
+  "fastapi" \
+  "uvicorn" \
+  "python-multipart" \
+  "fastmcp" \
+  "pydantic" \
+  "google-api-python-client" \
+  "google-auth-httplib2" \
+  "google-auth-oauthlib" \
+  "pandas" \
+  "openpyxl" \
+  "tabulate"
+
+# Copy the file receiver script and start script
+COPY file_receiver.py /a0/file_receiver.py
+COPY start_services.sh /a0/start_services.sh
+COPY tools/read_drive_file.py /a0/tools/read_drive_file.py
+RUN chmod +x /a0/start_services.sh
+
+# Set the new entrypoint/command to run both services
+CMD ["/initialize_with_persistence.sh", "/a0/start_services.sh"]
