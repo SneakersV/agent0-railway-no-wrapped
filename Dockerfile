@@ -4,8 +4,9 @@ RUN echo "CACHE_BUST=$CACHE_BUST"
 
 WORKDIR /a0
 
+# --- ML Stack Alignment ---
+# The base image has pre-compiled ML libs. We re-pin them here for ABI consistency.
 ENV PYTHONNOUSERSITE=1
-ENV PYTHONPATH=
 
 # Upgrade build tooling
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir -U "pip<25" "setuptools" "wheel"
@@ -26,15 +27,12 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir --only-binary=:all: \
   "scikit-learn==1.5.2"
 
 # 4) NLP stack pinned (stable combo with py3.12 CPU)
-# Downgrade transformers to avoid 'register_fake' issues with slightly older torch,
-# or ensure torch is new enough. Let's align them.
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir --only-binary=:all: \
   "transformers==4.40.2" \
   "accelerate==0.30.1" \
   "sentence-transformers==2.7.0"
 
-# 5) Torch CPU 2.4.0 (recent enough for modern transformers)
-# FORCE numpy<2 again here to prevent torch dependencies from upgrading it
+# 5) Torch CPU 2.4.0
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   --index-url https://download.pytorch.org/whl/cpu \
   "torch==2.4.0" \
@@ -46,28 +44,22 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "numpy<2"
 
 # --- Persistence Setup ---
-# --- Persistence Setup ---
-# 1. Config environment for persistent Python packages (Hybrid Persistence)
-#    STRATEGY CHANGE: Core libs go to /opt/venv-a0 (default).
-#    We prioritize the VENV site-packages over /per/lib to prevent "zombie" libs from overriding core.
-ENV PYTHONPATH=/opt/venv-a0/lib/python3.12/site-packages:/a0:/per/lib \
-  PATH=/opt/venv-a0/bin:/per/lib/bin:$PATH
+# STRATEGY A: Core libs stay in /opt/venv-a0 (from the Docker Image).
+#             /per only persists DATA (memory, prompts, usr, ssh).
+#             We do NOT set PIP_TARGET or override PYTHONPATH globally.
+#             This prevents "zombie" libraries from /per/lib overriding the runtime.
 
-# 2. Copy the custom initialization script
+# Copy the custom initialization script
 COPY initialize_with_persistence.sh /initialize_with_persistence.sh
 RUN chmod +x /initialize_with_persistence.sh
 
-# Set the new entrypoint/command
-# --- File Receiver API Setup ---
-# Install dependencies for the upload API AND Google Drive Tools
-# CRITICAL: We install these into the IMAGE (/opt/venv-a0), so they are always fresh and compatible.
-# We also pin versions to ensure stability.
+# --- Extra Tools ---
+# Install ONLY our custom dependencies. DO NOT install fastmcp or pydantic here.
+# The base image already has the correct, compatible versions of those.
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "fastapi" \
   "uvicorn" \
   "python-multipart" \
-  "fastmcp<2.0" \
-  "pydantic<2.10" \
   "google-api-python-client" \
   "google-auth-httplib2" \
   "google-auth-oauthlib" \

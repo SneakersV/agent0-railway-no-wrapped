@@ -9,8 +9,7 @@ echo "----------------------------------------------------------------"
 PER_VOL="/per"
 
 # Define the directories we want to persist (SYMLINK STRATEGY)
-# CAUTION: We REMOVED /opt/venv-a0 from here to avoid "No space left on device"
-# instead we will use PIP_TARGET strategy for libraries
+# ONLY user data is persisted. Core runtime (/opt/venv-a0) stays in the image.
 declare -A PERSIST_PATHS=(
     ["/a0/usr"]="usr"
     ["/a0/memory"]="memory"
@@ -27,8 +26,6 @@ else
 
     # 0. PRE-POPULATE /a0
     # We must populate /a0 from /git/agent-zero NOW, before creating symlinks.
-    # Otherwise, the default copy_A0.sh script will run later, try to copy directories
-    # over our symlinks, and fail with "cannot overwrite non-directory".
     if [ ! -f "/a0/run_ui.py" ]; then
         echo "Pre-populating /a0 from /git/agent-zero..."
         cp -rn --no-preserve=ownership,mode /git/agent-zero/. /a0/
@@ -40,10 +37,6 @@ else
         PER_PATH="$PER_VOL/$PER_SUBDIR"
         
         echo "Processing $CONTAINER_PATH -> $PER_PATH"
-        
-        # Check if we have data in the container (now we do, because of pre-populate)
-        # If persistent storage is empty, move container data there.
-        # If persistent storage has data, delete container data and link.
         
         if [ ! -d "$PER_PATH" ]; then
             echo "  -> First run detected for $PER_SUBDIR. Moving initial data to volume..."
@@ -57,13 +50,10 @@ else
             echo "  -> Found existing data in volume for $PER_SUBDIR. Syncing..."
             
             # Special handling for prompts: ALWAYS update them from image
-            # This fixes "FileNotFound" if the volume has broken/old prompts
             if [[ "$PER_SUBDIR" == "prompts" && -d "$CONTAINER_PATH" ]]; then
                 echo "    -> Force updating prompts from image..."
                 cp -rf "$CONTAINER_PATH"/. "$PER_PATH"/
             elif [ -d "$CONTAINER_PATH" ]; then
-                # For other dirs, just fill missing files (don't overwrite user data)
-                # Use /. to copy contents including hidden files, avoids error if empty
                 cp -rn "$CONTAINER_PATH"/. "$PER_PATH"/ || true
             fi
             
@@ -76,11 +66,22 @@ else
         echo "  -> Linked $CONTAINER_PATH -> $PER_PATH"
     done
 
-    # 2. Handle Python Libraries (PIP_TARGET Strategy)
-    # We create a directory for user-installed packages
+    # 2. CLEANUP: Remove zombie libraries from /per/lib
+    # Previous deployments may have installed conflicting libs here.
+    # Strategy A: Core runtime lives ONLY in /opt/venv-a0.
+    # /per/lib should not contain core libs that shadow the image's versions.
     PER_LIB="$PER_VOL/lib"
-    mkdir -p "$PER_LIB"
-    echo "  -> Prepared persistent library directory at $PER_LIB"
+    if [ -d "$PER_LIB" ]; then
+        echo "Cleaning zombie libraries from $PER_LIB..."
+        # Remove known conflict packages that were previously installed here
+        rm -rf "$PER_LIB/fastmcp"* "$PER_LIB/pydantic"* \
+               "$PER_LIB/lxml"* "$PER_LIB/supervisor"* \
+               "$PER_LIB/google"* "$PER_LIB/httplib2"* \
+               "$PER_LIB/pandas"* "$PER_LIB/numpy"* \
+               "$PER_LIB/scipy"* "$PER_LIB/torch"* \
+               "$PER_LIB/bin" 2>/dev/null || true
+        echo "  -> Cleanup complete."
+    fi
 fi
 
 echo "Persistence setup complete."
@@ -89,12 +90,6 @@ echo "Starting standard Agent Zero initialization..."
 
 # PATCH: The original initialize.sh tries to copy /per/* to /, which conflicts 
 # with our symlink strategy (and overwrites /lib). We must disable it.
-# The line is: cp -r --no-preserve=ownership,mode /per/* /
 sed -i 's|cp -r --no-preserve=ownership,mode /per/\* /|echo "Skipping copy from /per (managed by persistence script)"|' /exe/initialize.sh
 
-# --- Persistence Setup Complete ---
-# Core libraries are now in /opt/venv-a0 (from Docker Image), so no need to install/patch here.
-# User-installed tools can still go to /per/lib (added to PYTHONPATH in Dockerfile).
-
 exec /exe/initialize.sh "$@"
-
