@@ -46,11 +46,12 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "numpy<2"
 
 # --- Persistence Setup ---
+# --- Persistence Setup ---
 # 1. Config environment for persistent Python packages (Hybrid Persistence)
-#    New pip installs go to /per/lib, but we keep system libs in /opt/venv-a0
-ENV PIP_TARGET=/per/lib \
-  PYTHONPATH=/per/lib:/a0 \
-  PATH=/per/lib/bin:$PATH
+#    STRATEGY CHANGE: Core libs go to /opt/venv-a0 (default).
+#    We prioritize the VENV site-packages over /per/lib to prevent "zombie" libs from overriding core.
+ENV PYTHONPATH=/opt/venv-a0/lib/python3.12/site-packages:/a0:/per/lib \
+  PATH=/opt/venv-a0/bin:/per/lib/bin:$PATH
 
 # 2. Copy the custom initialization script
 COPY initialize_with_persistence.sh /initialize_with_persistence.sh
@@ -59,12 +60,14 @@ RUN chmod +x /initialize_with_persistence.sh
 # Set the new entrypoint/command
 # --- File Receiver API Setup ---
 # Install dependencies for the upload API AND Google Drive Tools
+# CRITICAL: We install these into the IMAGE (/opt/venv-a0), so they are always fresh and compatible.
+# We also pin versions to ensure stability.
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "fastapi" \
   "uvicorn" \
   "python-multipart" \
-  "fastmcp" \
-  "pydantic" \
+  "fastmcp<2.0" \
+  "pydantic<2.10" \
   "google-api-python-client" \
   "google-auth-httplib2" \
   "google-auth-oauthlib" \
