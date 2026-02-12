@@ -104,16 +104,27 @@ export PYTHONPATH=/per/lib:/a0
 
 # 2. Re-install fresh compatible versions
 # Downgrading to ensure compatibility with Agent Zero v0.9.7 code
-# 2. Re-install fresh compatible versions
-# fastmcp < 2.0 avoids the major rewrite and deprecation warnings
-# pydantic < 2.10 avoids the "default_factory" TypeError
-echo "Self-Healing: Installing FIXED compatible libraries..."
+# 2. Re-install libraries
+# We install pydantic<2.10 to fix the TypeError.
+# We let fastmcp update to latest, but we PATCH the code below to handle it.
+echo "Self-Healing: Installing libs..."
 /opt/venv-a0/bin/python -m pip install --no-cache-dir \
-    "fastmcp<2.0" \
     "pydantic<2.10" \
+    "fastmcp" \
     "google-api-python-client" \
     "google-auth-httplib2" \
     "google-auth-oauthlib" > /a0/install_log.txt 2>&1 || echo "WARNING: Self-healing install failed!"
+
+# 3. CODE PATCH: Fix FastMCP v2.x compatibility in Agent Zero v0.9.7 code
+# Error: 'FastMCP' object has no attribute '_auth_server_provider'
+echo "Self-Healing: Patching mcp_server.py for FastMCP v2 compatibility..."
+TARGET_FILE="/a0/python/helpers/mcp_server.py"
+if [ -f "$TARGET_FILE" ]; then
+    sed -i 's/auth_server_provider=mcp_server._auth_server_provider,/auth_server_provider=getattr(mcp_server, "_auth_server_provider", None),/g' "$TARGET_FILE"
+    echo "  -> Patched mcp_server.py"
+else
+    echo "  -> WARNING: $TARGET_FILE not found, skipping patch."
+fi
 
 # Show log for debugging
 echo "--- INSTALL SHARED LOG ---"
