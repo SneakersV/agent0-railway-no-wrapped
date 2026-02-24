@@ -16,6 +16,7 @@ declare -A PERSIST_PATHS=(
     ["/a0/prompts"]="prompts"
     ["/root/.ssh"]="ssh"
     ["/a0/skills"]="skills"
+    ["/a0/tmp_chats"]="tmp_chats"
 )
 
 # Ensure /per is mounted
