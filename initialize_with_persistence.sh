@@ -49,16 +49,29 @@ else
         else
             echo "  -> Found existing data in volume for $PER_SUBDIR. Syncing..."
             
-            # Special handling for prompts: ALWAYS update them from image
-            if [[ "$PER_SUBDIR" == "prompts" && -d "$CONTAINER_PATH" ]]; then
-                echo "    -> Force updating prompts from image..."
-                cp -rf "$CONTAINER_PATH"/. "$PER_PATH"/
-            elif [ -d "$CONTAINER_PATH" ]; then
-                cp -rn "$CONTAINER_PATH"/. "$PER_PATH"/ || true
+            # If the container path is already a symlink (from a previous run),
+            # it points to the volume itself, so we can't copy from it.
+            if [ -L "$CONTAINER_PATH" ]; then
+                echo "  -> Already symlinked from previous run."
+                # For prompts, copy from the original image source instead
+                if [[ "$PER_SUBDIR" == "prompts" && -d "/git/agent-zero/prompts" ]]; then
+                    echo "    -> Force updating prompts from image source..."
+                    cp -rf /git/agent-zero/prompts/. "$PER_PATH"/
+                fi
+                # Remove the old symlink so we can recreate it cleanly below
+                rm -f "$CONTAINER_PATH"
+            else
+                # Special handling for prompts: ALWAYS update them from image
+                if [[ "$PER_SUBDIR" == "prompts" && -d "$CONTAINER_PATH" ]]; then
+                    echo "    -> Force updating prompts from image..."
+                    cp -rf "$CONTAINER_PATH"/. "$PER_PATH"/
+                elif [ -d "$CONTAINER_PATH" ]; then
+                    cp -rn "$CONTAINER_PATH"/. "$PER_PATH"/ || true
+                fi
+                
+                # Remove the container version
+                rm -rf "$CONTAINER_PATH"
             fi
-            
-            # Remove the container version
-            rm -rf "$CONTAINER_PATH"
         fi
 
         # Create the symlink
