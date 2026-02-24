@@ -7,3 +7,4 @@ __pycache__/
 .n8n
 credentials.json
 client_secret.json
+*.env
