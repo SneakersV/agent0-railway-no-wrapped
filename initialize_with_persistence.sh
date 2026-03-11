@@ -106,4 +106,40 @@ echo "Starting standard Agent Zero initialization..."
 # with our symlink strategy (and overwrites /lib). We must disable it.
 sed -i 's|cp -r --no-preserve=ownership,mode /per/\* /|echo "Skipping copy from /per (managed by persistence script)"|' /exe/initialize.sh
 
+# 3. Compatibility patch for base-image scripts that expect:
+#    source /opt/venv-a0/bin/activate
+if [ -x /opt/venv-a0/bin/python ] && [ ! -f /opt/venv-a0/bin/activate ]; then
+  echo "Creating compatibility activate script for /opt/venv-a0 ..."
+  mkdir -p /opt/venv-a0/bin
+  cat > /opt/venv-a0/bin/activate <<'EOF'
+VIRTUAL_ENV=/opt/venv-a0
+export VIRTUAL_ENV
+case ":$PATH:" in
+  *":$VIRTUAL_ENV/bin:"*) ;;
+  *) PATH="$VIRTUAL_ENV/bin:$PATH"; export PATH ;;
+esac
+unset PYTHONHOME
+EOF
+  chmod +x /opt/venv-a0/bin/activate
+fi
+
+if [ -f /ins/setup_venv.sh ]; then
+  cp /ins/setup_venv.sh /ins/setup_venv.sh.bak 2>/dev/null || true
+  python3 - <<'PY'
+from pathlib import Path
+p = Path("/ins/setup_venv.sh")
+if p.exists():
+    s = p.read_text()
+    old = "source /opt/venv-a0/bin/activate"
+    new = """if [ -f /opt/venv-a0/bin/activate ]; then
+  source /opt/venv-a0/bin/activate
+elif [ -x /opt/venv-a0/bin/python ]; then
+  export VIRTUAL_ENV=/opt/venv-a0
+  export PATH=/opt/venv-a0/bin:$PATH
+fi"""
+    if old in s:
+        p.write_text(s.replace(old, new))
+PY
+fi
+
 exec /exe/initialize.sh "$@"
