@@ -1,5 +1,5 @@
-FROM agent0ai/agent-zero:v0.9.8.2
-ARG CACHE_BUST=1
+FROM agent0ai/agent-zero:latest
+ARG CACHE_BUST=2
 RUN echo "CACHE_BUST=$CACHE_BUST"
 
 WORKDIR /a0
