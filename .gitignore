@@ -8,3 +8,5 @@ __pycache__/
 credentials.json
 client_secret.json
 *.env
+tmp_agent0_source/
+.gitignore
