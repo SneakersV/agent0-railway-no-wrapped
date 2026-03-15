@@ -21,6 +21,11 @@ export PIP_TARGET=/per/lib
     "google-auth-oauthlib" || echo "WARNING: Self-healing update failed, continuing anyway..."
 # -----------------------------------------------
 
+# --- Optimization: Generate Skills Index ---
+echo "Generating enhanced skills index in /per/memory/skills_index.md..."
+/opt/venv-a0/bin/python tools/index_skills_v2.py
+# -----------------------------------------------
+
 /opt/venv-a0/bin/python file_receiver.py &
 
 # Start the Main Agent Zero Process (Keep this in foreground to be the main process)
