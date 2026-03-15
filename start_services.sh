@@ -19,6 +19,12 @@ export PIP_TARGET=/per/lib
     "google-api-python-client" \
     "google-auth-httplib2" \
     "google-auth-oauthlib" || echo "WARNING: Self-healing update failed, continuing anyway..."
+
+# --- Compatibility Fix: ipython path ---
+echo "Creating ipython compatibility symlink..."
+mkdir -p /usr/local/bin
+ln -sf /a0/usr/workdir/supabase_venv/bin/ipython /usr/local/bin/ipython || true
+# -----------------------------------------------
 # -----------------------------------------------
 
 # --- Optimization: Generate Skills Index ---
