@@ -20,11 +20,20 @@ export PIP_TARGET=/per/lib
     "google-auth-httplib2" \
     "google-auth-oauthlib" || echo "WARNING: Self-healing update failed, continuing anyway..."
 
+# --- Environment Setup: Supabase Venv & Dependencies ---
+echo "Ensuring supabase_venv exists and has required dependencies..."
+mkdir -p /a0/skills
+VENV_PATH="/a0/skills/supabase_venv"
+if [ ! -d "$VENV_PATH" ]; then
+    /opt/venv-a0/bin/python -m venv "$VENV_PATH"
+fi
+"$VENV_PATH/bin/python" -m pip install --upgrade pip
+"$VENV_PATH/bin/python" -m pip install requests ipython
+
 # --- Compatibility Fix: ipython path ---
 echo "Creating ipython compatibility symlink..."
 mkdir -p /usr/local/bin
-ln -sf /a0/usr/workdir/supabase_venv/bin/ipython /usr/local/bin/ipython || true
-# -----------------------------------------------
+ln -sf "$VENV_PATH/bin/ipython" /usr/local/bin/ipython || true
 # -----------------------------------------------
 
 # --- Optimization: Generate Skills Index ---
