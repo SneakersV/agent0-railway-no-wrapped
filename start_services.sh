@@ -33,7 +33,9 @@ fi
 # --- Compatibility Fix: ipython path ---
 echo "Creating ipython compatibility symlink..."
 mkdir -p /usr/local/bin
+mkdir -p /opt/venv-a0/bin
 ln -sf "$VENV_PATH/bin/ipython" /usr/local/bin/ipython || true
+ln -sf "$VENV_PATH/bin/ipython" /opt/venv-a0/bin/ipython || true
 # -----------------------------------------------
 
 # --- Optimization: Generate Skills Index ---
