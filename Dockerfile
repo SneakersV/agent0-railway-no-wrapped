@@ -85,13 +85,27 @@ RUN mkdir -p /a0/api /git/agent-zero/api /a0/python/api /git/agent-zero/python/a
 # includes the same fix.
 RUN /opt/venv-a0/bin/python - <<'PY'
 from pathlib import Path
+import re
 
-needle = '    out["settings"]["root_password"] = API_KEY_PLACEHOLDER if out["settings"].get("root_password") else ""\\n'
-replacement = needle + (
-    '    out["settings"]["mcp_server_token"] = (\\n'
-    '        API_KEY_PLACEHOLDER if out["settings"].get("mcp_server_token") else ""\\n'
-    '    )\\n'
+patterns = [
+    re.compile(
+        r'(?P<block>    out\["settings"\]\["root_password"\] = \(\n'
+        r'        PASSWORD_PLACEHOLDER if dotenv\.get_dotenv_value\(dotenv\.KEY_ROOT_PASSWORD\) else ""\n'
+        r'    \)\n)'
+    ),
+    re.compile(
+        r'(?P<block>    out\["settings"\]\["root_password"\] = API_KEY_PLACEHOLDER if out\["settings"\]\.get\("root_password"\) else ""\n)'
+    ),
+]
+
+insert = (
+    '    out["settings"]["mcp_server_token"] = (\n'
+    '        API_KEY_PLACEHOLDER if out["settings"].get("mcp_server_token") else ""\n'
+    '    )\n'
 )
+
+patched_any = False
+existing_target_found = False
 
 for raw_path in (
     "/git/agent-zero/helpers/settings.py",
@@ -104,11 +118,20 @@ for raw_path in (
         continue
     content = path.read_text()
     if 'out["settings"]["mcp_server_token"] = (' in content:
+        existing_target_found = True
         continue
-    if needle not in content:
-        raise SystemExit(f"Could not patch {path}: anchor not found")
-    path.write_text(content.replace(needle, replacement, 1))
-    print(f"Patched {path}")
+    for pattern in patterns:
+        match = pattern.search(content)
+        if not match:
+            continue
+        content = content[:match.end("block")] + insert + content[match.end("block"):]
+        path.write_text(content)
+        patched_any = True
+        print(f"Patched {path}")
+        break
+
+if not patched_any and not existing_target_found:
+    raise SystemExit("Could not patch any settings.py path: anchor not found")
 PY
 
 # Set the new entrypoint/command to run both services
