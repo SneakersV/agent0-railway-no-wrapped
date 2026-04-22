@@ -36,6 +36,7 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir --only-binary=:all: \
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   --index-url https://download.pytorch.org/whl/cpu \
   "torch==2.4.0" \
+  "torchvision==0.19.0" \
   "numpy<2"
 
 RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
