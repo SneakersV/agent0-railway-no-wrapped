@@ -36,10 +36,12 @@ else
     # Re-apply the settings_get override after pre-population so the live API
     # path cannot drift back to the base-image copy.
     if [ -f /tmp/settings_get.py ]; then
-        mkdir -p /a0/python/api /git/agent-zero/python/api
+        mkdir -p /a0/api /git/agent-zero/api /a0/python/api /git/agent-zero/python/api
+        cp /tmp/settings_get.py /a0/api/settings_get.py
+        cp /tmp/settings_get.py /git/agent-zero/api/settings_get.py
         cp /tmp/settings_get.py /a0/python/api/settings_get.py
         cp /tmp/settings_get.py /git/agent-zero/python/api/settings_get.py
-        echo "Re-applied settings_get override to /a0 and /git/agent-zero"
+        echo "Re-applied settings_get override to current and legacy API paths"
     else
         echo "WARNING: /tmp/settings_get.py missing; settings_get override was not re-applied"
     fi
@@ -159,11 +161,6 @@ fi
 /opt/venv-a0/bin/python - <<'PY'
 from pathlib import Path
 
-path = Path("/a0/python/helpers/settings.py")
-if not path.exists():
-    print("WARNING: settings.py not found at /a0/python/helpers/settings.py; skipping runtime mask patch")
-    raise SystemExit(0)
-
 marker = '\n    #secrets'
 insertion = (
     '    out["settings"]["mcp_server_token"] = (\n'
@@ -171,15 +168,33 @@ insertion = (
     '    )\n'
 )
 
-content = path.read_text()
-if 'out["settings"]["mcp_server_token"] = (' not in content:
+patched = False
+for raw_path in (
+    "/a0/helpers/settings.py",
+    "/git/agent-zero/helpers/settings.py",
+    "/a0/python/helpers/settings.py",
+    "/git/agent-zero/python/helpers/settings.py",
+):
+    path = Path(raw_path)
+    if not path.exists():
+        continue
+
+    content = path.read_text()
+    if 'out["settings"]["mcp_server_token"] = (' in content:
+        print(f"Runtime settings.py already masks mcp_server_token: {path}")
+        patched = True
+        continue
+
     if marker not in content:
-        print("WARNING: Could not find insertion marker for runtime mcp_server_token patch")
-        raise SystemExit(0)
+        print(f"WARNING: Could not find insertion marker for runtime mcp_server_token patch: {path}")
+        continue
+
     path.write_text(content.replace(marker, f'\n{insertion}{marker}', 1))
-    print("Patched runtime settings.py for mcp_server_token masking")
-else:
-    print("Runtime settings.py already masks mcp_server_token")
+    print(f"Patched runtime settings.py for mcp_server_token masking: {path}")
+    patched = True
+
+if not patched:
+    print("WARNING: No settings.py candidate was patched at runtime")
 PY
 
 exec /exe/initialize.sh "$@"

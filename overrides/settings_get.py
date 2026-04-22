@@ -1,6 +1,9 @@
-from python.helpers.api import ApiHandler, Request, Response
-
-from python.helpers import settings
+try:
+    from helpers.api import ApiHandler, Request, Response
+    from helpers import settings
+except ImportError:  # compatibility with older base-image layout
+    from python.helpers.api import ApiHandler, Request, Response
+    from python.helpers import settings
 
 
 class GetSettings(ApiHandler):

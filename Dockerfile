@@ -74,7 +74,9 @@ COPY tools/read_drive_file.py /a0/tools/read_drive_file.py
 COPY overrides/settings_get.py /tmp/settings_get.py
 RUN chmod +x /a0/start_services.sh
 
-RUN mkdir -p /a0/python/api /git/agent-zero/python/api && \
+RUN mkdir -p /a0/api /git/agent-zero/api /a0/python/api /git/agent-zero/python/api && \
+  cp /tmp/settings_get.py /a0/api/settings_get.py && \
+  cp /tmp/settings_get.py /git/agent-zero/api/settings_get.py && \
   cp /tmp/settings_get.py /a0/python/api/settings_get.py && \
   cp /tmp/settings_get.py /git/agent-zero/python/api/settings_get.py
 
@@ -91,6 +93,8 @@ replacement = needle + (
 )
 
 for raw_path in (
+    "/git/agent-zero/helpers/settings.py",
+    "/a0/helpers/settings.py",
     "/git/agent-zero/python/helpers/settings.py",
     "/a0/python/helpers/settings.py",
 ):
