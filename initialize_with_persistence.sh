@@ -32,6 +32,17 @@ else
         echo "Pre-populating /a0 from /git/agent-zero..."
         cp -rn --no-preserve=ownership,mode /git/agent-zero/. /a0/
     fi
+
+    # Re-apply the settings_get override after pre-population so the live API
+    # path cannot drift back to the base-image copy.
+    if [ -f /tmp/settings_get.py ]; then
+        mkdir -p /a0/python/api /git/agent-zero/python/api
+        cp /tmp/settings_get.py /a0/python/api/settings_get.py
+        cp /tmp/settings_get.py /git/agent-zero/python/api/settings_get.py
+        echo "Re-applied settings_get override to /a0 and /git/agent-zero"
+    else
+        echo "WARNING: /tmp/settings_get.py missing; settings_get override was not re-applied"
+    fi
     
     # 1. Handle Symlinked Directories
     for CONTAINER_PATH in "${!PERSIST_PATHS[@]}"; do
@@ -142,5 +153,33 @@ fi"""
         p.write_text(s.replace(old, new))
 PY
 fi
+
+# Ensure settings_get masks mcp_server_token even if the upstream base image
+# has not yet shipped the fix.
+/opt/venv-a0/bin/python - <<'PY'
+from pathlib import Path
+
+path = Path("/a0/python/helpers/settings.py")
+if not path.exists():
+    print("WARNING: settings.py not found at /a0/python/helpers/settings.py; skipping runtime mask patch")
+    raise SystemExit(0)
+
+marker = '\n    #secrets'
+insertion = (
+    '    out["settings"]["mcp_server_token"] = (\n'
+    '        API_KEY_PLACEHOLDER if out["settings"].get("mcp_server_token") else ""\n'
+    '    )\n'
+)
+
+content = path.read_text()
+if 'out["settings"]["mcp_server_token"] = (' not in content:
+    if marker not in content:
+        print("WARNING: Could not find insertion marker for runtime mcp_server_token patch")
+        raise SystemExit(0)
+    path.write_text(content.replace(marker, f'\n{insertion}{marker}', 1))
+    print("Patched runtime settings.py for mcp_server_token masking")
+else:
+    print("Runtime settings.py already masks mcp_server_token")
+PY
 
 exec /exe/initialize.sh "$@"

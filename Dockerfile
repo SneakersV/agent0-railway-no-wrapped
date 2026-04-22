@@ -71,7 +71,40 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
 COPY file_receiver.py /a0/file_receiver.py
 COPY start_services.sh /a0/start_services.sh
 COPY tools/read_drive_file.py /a0/tools/read_drive_file.py
+COPY overrides/settings_get.py /tmp/settings_get.py
 RUN chmod +x /a0/start_services.sh
+
+RUN mkdir -p /a0/python/api /git/agent-zero/python/api && \
+  cp /tmp/settings_get.py /a0/python/api/settings_get.py && \
+  cp /tmp/settings_get.py /git/agent-zero/python/api/settings_get.py
+
+# Mask mcp_server_token in settings_get responses until the upstream base image
+# includes the same fix.
+RUN /opt/venv-a0/bin/python - <<'PY'
+from pathlib import Path
+
+needle = '    out["settings"]["root_password"] = API_KEY_PLACEHOLDER if out["settings"].get("root_password") else ""\\n'
+replacement = needle + (
+    '    out["settings"]["mcp_server_token"] = (\\n'
+    '        API_KEY_PLACEHOLDER if out["settings"].get("mcp_server_token") else ""\\n'
+    '    )\\n'
+)
+
+for raw_path in (
+    "/git/agent-zero/python/helpers/settings.py",
+    "/a0/python/helpers/settings.py",
+):
+    path = Path(raw_path)
+    if not path.exists():
+        continue
+    content = path.read_text()
+    if 'out["settings"]["mcp_server_token"] = (' in content:
+        continue
+    if needle not in content:
+        raise SystemExit(f"Could not patch {path}: anchor not found")
+    path.write_text(content.replace(needle, replacement, 1))
+    print(f"Patched {path}")
+PY
 
 # Set the new entrypoint/command to run both services
 CMD ["/initialize_with_persistence.sh", "/a0/start_services.sh"]
