@@ -59,6 +59,9 @@ else
             mkdir -p "$(dirname "$PER_PATH")"
             if [[ "$PER_SUBDIR" == "prompts" && -d "$PROMPT_IMAGE_SOURCE" ]]; then
                 mkdir -p "$PER_PATH"
+                if [ -d "$CONTAINER_PATH" ]; then
+                    cp -rf "$CONTAINER_PATH"/. "$PER_PATH"/
+                fi
                 cp -rf "$PROMPT_IMAGE_SOURCE"/. "$PER_PATH"/
             elif [ -d "$CONTAINER_PATH" ]; then
                 mv "$CONTAINER_PATH" "$PER_PATH"
