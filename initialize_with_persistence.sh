@@ -7,6 +7,7 @@ echo "----------------------------------------------------------------"
 
 # Define the single persistent volume path
 PER_VOL="/per"
+PROMPT_IMAGE_SOURCE="/opt/agent0-wrapper/prompts"
 
 # Define the directories we want to persist (SYMLINK STRATEGY)
 # ONLY user data is persisted. Core runtime (/opt/venv-a0) stays in the image.
@@ -56,7 +57,10 @@ else
         if [ ! -d "$PER_PATH" ]; then
             echo "  -> First run detected for $PER_SUBDIR. Moving initial data to volume..."
             mkdir -p "$(dirname "$PER_PATH")"
-            if [ -d "$CONTAINER_PATH" ]; then
+            if [[ "$PER_SUBDIR" == "prompts" && -d "$PROMPT_IMAGE_SOURCE" ]]; then
+                mkdir -p "$PER_PATH"
+                cp -rf "$PROMPT_IMAGE_SOURCE"/. "$PER_PATH"/
+            elif [ -d "$CONTAINER_PATH" ]; then
                 mv "$CONTAINER_PATH" "$PER_PATH"
             else
                 mkdir -p "$PER_PATH"
@@ -69,17 +73,17 @@ else
             if [ -L "$CONTAINER_PATH" ]; then
                 echo "  -> Already symlinked from previous run."
                 # For prompts, copy from the original image source instead
-                if [[ "$PER_SUBDIR" == "prompts" && -d "/git/agent-zero/prompts" ]]; then
+                if [[ "$PER_SUBDIR" == "prompts" && -d "$PROMPT_IMAGE_SOURCE" ]]; then
                     echo "    -> Force updating prompts from image source..."
-                    cp -rf /git/agent-zero/prompts/. "$PER_PATH"/
+                    cp -rf "$PROMPT_IMAGE_SOURCE"/. "$PER_PATH"/
                 fi
                 # Remove the old symlink so we can recreate it cleanly below
                 rm -f "$CONTAINER_PATH"
             else
                 # Special handling for prompts: ALWAYS update them from image
-                if [[ "$PER_SUBDIR" == "prompts" && -d "$CONTAINER_PATH" ]]; then
+                if [[ "$PER_SUBDIR" == "prompts" && -d "$PROMPT_IMAGE_SOURCE" ]]; then
                     echo "    -> Force updating prompts from image..."
-                    cp -rf "$CONTAINER_PATH"/. "$PER_PATH"/
+                    cp -rf "$PROMPT_IMAGE_SOURCE"/. "$PER_PATH"/
                 elif [ -d "$CONTAINER_PATH" ]; then
                     cp -rn "$CONTAINER_PATH"/. "$PER_PATH"/ || true
                 fi

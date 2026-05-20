@@ -66,11 +66,14 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "google-auth-oauthlib" \
   "pandas" \
   "openpyxl" \
+  "xlrd" \
   "tabulate"
 
 # Copy the file receiver script and start script
 COPY file_receiver.py /a0/file_receiver.py
 COPY start_services.sh /a0/start_services.sh
+COPY prompts /a0/prompts
+COPY prompts /opt/agent0-wrapper/prompts
 COPY tools/read_drive_file.py /a0/tools/read_drive_file.py
 COPY overrides/settings_get.py /tmp/settings_get.py
 RUN chmod +x /a0/start_services.sh
