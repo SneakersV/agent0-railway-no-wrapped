@@ -15,7 +15,7 @@ GOOGLE_SHEET_XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsh
 def get_drive_service():
     """Authenticates and returns the Google Drive service."""
     if not os.path.exists(SERVICE_ACCOUNT_FILE):
-        return None, "credentials.json not found"
+        return None, f"credentials.json not found at {SERVICE_ACCOUNT_FILE}"
 
     try:
         from google.oauth2 import service_account

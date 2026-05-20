@@ -4,7 +4,13 @@ echo "Starting File Receiver on port 8001..."
 # --- Auto-configure Credentials from Env Var ---
 if [ -n "$GDRIVE_JSON" ]; then
     echo "Creating credentials.json from GDRIVE_JSON environment variable..."
-    echo "$GDRIVE_JSON" > /a0/credentials.json
+    printf '%s' "$GDRIVE_JSON" > /a0/credentials.json
+    chmod 600 /a0/credentials.json
+    export GOOGLE_APPLICATION_CREDENTIALS=/a0/credentials.json
+elif [ -f /a0/credentials.json ]; then
+    export GOOGLE_APPLICATION_CREDENTIALS=/a0/credentials.json
+else
+    echo "WARNING: GDRIVE_JSON is not set and /a0/credentials.json does not exist."
 fi
 
 # --- Self-Healing: Fix Persistence Conflicts ---
