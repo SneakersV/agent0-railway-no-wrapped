@@ -14,18 +14,38 @@ GOOGLE_SHEET_XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsh
 
 def get_drive_service():
     """Authenticates and returns the Google Drive service."""
-    if not os.path.exists(SERVICE_ACCOUNT_FILE):
-        return None, f"credentials.json not found at {SERVICE_ACCOUNT_FILE}"
-
     try:
-        from google.oauth2 import service_account
         from googleapiclient.discovery import build
 
-        creds = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE,
-            scopes=SCOPES,
+        if os.path.exists(SERVICE_ACCOUNT_FILE):
+            from google.oauth2 import service_account
+
+            creds = service_account.Credentials.from_service_account_file(
+                SERVICE_ACCOUNT_FILE,
+                scopes=SCOPES,
+            )
+            return build("drive", "v3", credentials=creds), None
+
+        client_id = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
+        client_secret = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
+        refresh_token = os.getenv("GOOGLE_OAUTH_REFRESH_TOKEN")
+        if client_id and client_secret and refresh_token:
+            from google.oauth2.credentials import Credentials
+
+            creds = Credentials(
+                token=None,
+                refresh_token=refresh_token,
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=client_id,
+                client_secret=client_secret,
+                scopes=SCOPES,
+            )
+            return build("drive", "v3", credentials=creds), None
+
+        return None, (
+            f"credentials.json not found at {SERVICE_ACCOUNT_FILE}, and "
+            "GOOGLE_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN are not fully configured"
         )
-        return build("drive", "v3", credentials=creds), None
     except Exception as exc:
         return None, str(exc)
 
