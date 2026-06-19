@@ -69,11 +69,14 @@ RUN /opt/venv-a0/bin/python -m pip install --no-cache-dir \
   "xlrd" \
   "tabulate"
 
-# Copy the file receiver script and start script
+# Copy the file receiver script, tool scripts, and start script.
+# start_services.sh calls tools/index_skills_v2.py, and future remediation
+# paths may call tools/knowledge_builder.py; copying only read_drive_file.py
+# makes a fresh image depend on stale files from the persistent volume.
 COPY file_receiver.py /a0/file_receiver.py
 COPY start_services.sh /a0/start_services.sh
 COPY prompts /opt/agent0-wrapper/prompts
-COPY tools/read_drive_file.py /a0/tools/read_drive_file.py
+COPY tools /a0/tools
 COPY overrides/settings_get.py /tmp/settings_get.py
 RUN chmod +x /a0/start_services.sh
 

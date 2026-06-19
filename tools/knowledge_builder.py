@@ -27,8 +27,13 @@ def build_knowledge_base():
     print(f"Found {len(files)} files. Processing...")
 
     for file_record in files:
-        drive_id = file_record.get('drive_file_id') # Adjust column name if needed
-        file_name = file_record.get('file_name', 'Unknown')
+        drive_id = file_record.get('drive_file_id')
+        file_name = (
+            file_record.get('drive_name')
+            or file_record.get('file_search_name')
+            or file_record.get('file_name')
+            or 'Unknown'
+        )
         
         if not drive_id:
             print(f"Skipping {file_name}: No Drive ID")

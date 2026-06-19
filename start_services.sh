@@ -13,18 +13,23 @@ else
     echo "WARNING: GDRIVE_JSON is not set and /a0/credentials.json does not exist."
 fi
 
-# --- Self-Healing: Fix Persistence Conflicts ---
-# The volume (/per/lib) mimics user-installed packages but might hold outdated/conflicting libs
-# (like old pydantic) that break the new image's code (fastmcp).
-# We force-install critical libs to /per/lib to ensure consistency.
-echo "Self-Healing: Ensuring critical libraries in /per/lib are up to date..."
-export PIP_TARGET=/per/lib
-/opt/venv-a0/bin/python -m pip install --upgrade --no-deps \
-    "fastmcp" \
-    "pydantic" \
-    "google-api-python-client" \
-    "google-auth-httplib2" \
-    "google-auth-oauthlib" || echo "WARNING: Self-healing update failed, continuing anyway..."
+# --- Runtime Dependency Sanity Check ---
+# Core Python packages must come from the image venv. Do not install into
+# /per/lib at boot: initialize_with_persistence.sh deliberately removes zombie
+# libs from that volume, and writing them back can reintroduce ABI/version drift.
+echo "Checking critical Python libraries from /opt/venv-a0..."
+/opt/venv-a0/bin/python - <<'PY' || echo "WARNING: Critical library check failed; continuing to Agent Zero startup..."
+import importlib
+
+for module in (
+    "fastmcp",
+    "pydantic",
+    "googleapiclient",
+    "google.oauth2.service_account",
+):
+    importlib.import_module(module)
+print("Critical Python libraries are importable from the image venv.")
+PY
 
 # --- Environment Setup: Supabase Venv & Dependencies ---
 echo "Ensuring supabase_venv exists and has required dependencies..."
