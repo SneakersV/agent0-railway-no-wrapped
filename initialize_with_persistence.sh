@@ -46,6 +46,12 @@ else
     else
         echo "WARNING: /tmp/settings_get.py missing; settings_get override was not re-applied"
     fi
+
+    if [ -f /tmp/patch_api_key_auth.py ]; then
+        /opt/venv-a0/bin/python /tmp/patch_api_key_auth.py
+    else
+        echo "WARNING: /tmp/patch_api_key_auth.py missing; API key auth env aliases were not applied"
+    fi
     
     # 1. Handle Symlinked Directories
     for CONTAINER_PATH in "${!PERSIST_PATHS[@]}"; do
@@ -203,5 +209,11 @@ for raw_path in (
 if not patched:
     print("WARNING: No settings.py candidate was patched at runtime")
 PY
+
+if [ -f /tmp/patch_api_key_auth.py ]; then
+  /opt/venv-a0/bin/python /tmp/patch_api_key_auth.py
+else
+  echo "WARNING: /tmp/patch_api_key_auth.py missing; API key auth env aliases were not applied"
+fi
 
 exec /exe/initialize.sh "$@"

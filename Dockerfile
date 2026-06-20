@@ -78,6 +78,7 @@ COPY start_services.sh /a0/start_services.sh
 COPY prompts /opt/agent0-wrapper/prompts
 COPY tools /a0/tools
 COPY overrides/settings_get.py /tmp/settings_get.py
+COPY overrides/patch_api_key_auth.py /tmp/patch_api_key_auth.py
 RUN chmod +x /a0/start_services.sh
 
 RUN mkdir -p /a0/api /git/agent-zero/api /a0/python/api /git/agent-zero/python/api && \
@@ -85,6 +86,8 @@ RUN mkdir -p /a0/api /git/agent-zero/api /a0/python/api /git/agent-zero/python/a
   cp /tmp/settings_get.py /git/agent-zero/api/settings_get.py && \
   cp /tmp/settings_get.py /a0/python/api/settings_get.py && \
   cp /tmp/settings_get.py /git/agent-zero/python/api/settings_get.py
+
+RUN /opt/venv-a0/bin/python /tmp/patch_api_key_auth.py
 
 # Mask mcp_server_token in settings_get responses until the upstream base image
 # includes the same fix.
